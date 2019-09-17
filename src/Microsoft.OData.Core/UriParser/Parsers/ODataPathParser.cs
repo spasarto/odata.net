@@ -88,14 +88,16 @@ namespace Microsoft.OData.UriParser
             }
             else
             {
-                if (segmentText[segmentText.Length - 1] != ')')
+                int parenthesisEnd = segmentText.IndexOf(')');
+
+                if (parenthesisEnd < 0)
                 {
                     throw ExceptionUtil.CreateSyntaxError();
                 }
 
                 // split the string to grab the identifier and remove the parentheses
                 identifier = segmentText.Substring(0, parenthesisStart);
-                parenthesisExpression = segmentText.Substring(parenthesisStart + 1, segmentText.Length - identifier.Length - 2);
+                parenthesisExpression = segmentText.Substring(parenthesisStart + 1, parenthesisEnd - parenthesisStart - 1);
             }
 
             // We allow a single trailing '/', which results in an empty segment.
