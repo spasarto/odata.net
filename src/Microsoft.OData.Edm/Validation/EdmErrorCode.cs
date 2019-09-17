@@ -1372,5 +1372,20 @@ namespace Microsoft.OData.Edm.Validation
         /// Could not find a return on the annotated operation.
         /// </summary>
         BadUnresolvedReturn = 388,
+
+        /// <summary>
+        /// The composable escape bound function should not declare more than one.
+        /// </summary>
+        EntityComposableBoundEscapeFunctionMustBeLessOne = 389,
+
+        /// <summary>
+        /// The non-composable escape bound function should not declare more than one.
+        /// </summary>
+        EntityNoncomposableBoundEscapeFunctionMustBeLessOne = 390,
+
+        /// <summary>
+        /// The vocabulary annotation applies to not allowed annotatable element.
+        /// </summary>
+        AnnotationApplyToNotAllowedAnnotatable = 400,
     }
 }

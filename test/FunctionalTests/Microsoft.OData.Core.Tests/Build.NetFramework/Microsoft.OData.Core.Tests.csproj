@@ -93,6 +93,7 @@
     <Compile Include="..\AnnotationFilterPatternTests.cs" />
     <Compile Include="..\AnnotationFilterTests.cs" />
     <Compile Include="..\ArgumentValidationUtils.cs" />
+    <Compile Include="..\AssertExtensions.cs" />
     <Compile Include="..\BufferUtilsTests.cs" />
     <Compile Include="..\IntegrationTests\Reader\JsonLight\UriParameterReaderIntegrationTests.cs" />
     <Compile Include="..\IntegrationTests\Writer\JsonLight\ODataJsonLightWriterComplexIntegrationTests.cs" />
@@ -118,7 +119,9 @@
     <Compile Include="..\Evaluation\ODataEntityMetadataBuilderTestsUtils.cs" />
     <Compile Include="..\Evaluation\ODataEntryMetadataContextTest.cs" />
     <Compile Include="..\Evaluation\ODataMetadataContextTests.cs" />
+    <Compile Include="..\Evaluation\ODataMetadataSelectorTests.cs" />
     <Compile Include="..\Evaluation\ODataMissingOperationGeneratorTests.cs" />
+	<Compile Include="..\Evaluation\TestMetadataSelector.cs" />
     <Compile Include="..\Evaluation\TestModel.cs" />
     <Compile Include="..\HttpHeaderValueElementTests.cs" />
     <Compile Include="..\HttpHeaderValueLexerTests.cs" />
@@ -157,6 +160,7 @@
     <Compile Include="..\JsonLight\ODataJsonLightUtilsTests.cs" />
     <Compile Include="..\JsonLight\ODataJsonLightValidationUtilsTests.cs" />
     <Compile Include="..\JsonLight\ODataJsonLightValueSerializerTests.cs" />
+    <Compile Include="..\JsonLight\ODataSimplifiedOptionsTests.cs" />
     <Compile Include="..\JsonLight\PayloadValueConverters.cs" />
     <Compile Include="..\JsonLight\ReorderingJsonReaderTests.cs" />
     <Compile Include="..\JsonLight\TestEntityMetadataBuilder.cs" />
@@ -264,8 +268,8 @@
     <Compile Include="..\ScenarioTests\UriParser\EntityIdFunctionalTests.cs" />
     <Compile Include="..\ScenarioTests\UriParser\EntityReferenceFunctionalTests.cs" />
     <Compile Include="..\ScenarioTests\UriParser\EnumFilterFunctionalTests.cs" />
-    <Compile Include="..\ScenarioTests\UriParser\ExapndOptionFunctionalTests.cs" />
     <Compile Include="..\ScenarioTests\UriParser\ExpandAndSelectPathExtractingTests.cs" />
+    <Compile Include="..\ScenarioTests\UriParser\ExpandOptionFunctionalTests.cs" />
     <Compile Include="..\ScenarioTests\UriParser\ExtendedContainerElementsFunctionalTests.cs" />
     <Compile Include="..\ScenarioTests\UriParser\FilterAndOrderByFunctionalTests.cs" />
     <Compile Include="..\ScenarioTests\UriParser\FullUriFunctionalTests.cs" />
@@ -289,6 +293,8 @@
     <Compile Include="..\UriParser\Extensions\SyntacticAst\AggregateExpressionTokenTests.cs" />
     <Compile Include="..\UriParser\Extensions\SyntacticAst\AggregateTokenTests.cs" />
     <Compile Include="..\UriParser\Extensions\SyntacticAst\GroupByTokenTests.cs" />
+    <Compile Include="..\UriParser\Extensions\PathSegmentTokenExtensions.cs" />
+    <Compile Include="..\UriParser\Extensions\SelectExpandTokenSyntacticTreeVisitor.cs" />
     <Compile Include="..\UriParser\LiteralUtilsTests.cs" />
     <Compile Include="..\UriParser\Metadata\CaseInsensitiveBuiltinIdentifierTests.cs" />
     <Compile Include="..\UriParser\Metadata\CaseInsensitiveResolverTests.cs" />
@@ -334,7 +340,6 @@
     <Compile Include="..\UriParser\ModelBuildingHelpers.cs" />
     <Compile Include="..\UriParser\ODataValueAssertions.cs" />
     <Compile Include="..\UriParser\Parsers\ExpandDepthAndCountValidatorTests.cs" />
-    <Compile Include="..\UriParser\Parsers\ExpandOptionParserTests.cs" />
     <Compile Include="..\UriParser\Parsers\FunctionCallParserTests.cs" />
     <Compile Include="..\UriParser\Parsers\FunctionOverloadResolverTests.cs" />
     <Compile Include="..\UriParser\Binders\KeyBinderTests.cs" />
@@ -352,6 +357,7 @@
     <Compile Include="..\UriParser\Parsers\PathReverserTests.cs" />
     <Compile Include="..\UriParser\Parsers\SearchParserTests.cs" />
     <Compile Include="..\UriParser\Parsers\SegmentKeyHandlerTests.cs" />
+    <Compile Include="..\UriParser\Parsers\SelectExpandOptionParserTests.cs" />
     <Compile Include="..\UriParser\Parsers\SelectExpandParserTests.cs" />
     <Compile Include="..\UriParser\Parsers\SelectExpandTermParserTests.cs" />
     <Compile Include="..\UriParser\Parsers\CustomUriLiteralParserTests.cs" />
@@ -417,6 +423,7 @@
     <Compile Include="..\UriParser\SyntacticAst\InnerPathTokenTests.cs" />
     <Compile Include="..\UriParser\SyntacticAst\NonSystemTokenTests.cs" />
     <Compile Include="..\UriParser\SyntacticAst\PathSegmentTokenTests.cs" />
+    <Compile Include="..\UriParser\SyntacticAst\SelectTermTokenTests.cs" />
     <Compile Include="..\UriParser\SyntacticAst\StarTokenTests.cs" />
     <Compile Include="..\UriParser\SyntacticAst\SystemTokenTests.cs" />
     <Compile Include="..\UriParser\TokenAssertions.cs" />
@@ -427,9 +434,9 @@
     <Compile Include="..\UriParser\Visitors\PathSegmentTokenEqualityComparerTests.cs" />
     <Compile Include="..\UriParser\Parsers\SegmentArgumentParserTests.cs" />
     <Compile Include="..\UriParser\Binders\SelectBinderTests.cs" />
+    <Compile Include="..\UriParser\Binders\SelectExpandBinderTests.cs" />
     <Compile Include="..\UriParser\Binders\SelectExpandClauseFinisherTests.cs" />
     <Compile Include="..\UriParser\Binders\SelectExpandPathBinderTests.cs" />
-    <Compile Include="..\UriParser\Binders\SelectExpandSyntacticUnifierTests.cs" />
     <Compile Include="..\UriParser\Binders\SelectPathSegmentTokenBinderTests.cs" />
     <Compile Include="..\UriParser\Binders\SelectTreeNormalizerTests.cs" />
     <Compile Include="..\UriParser\Binders\UnaryOperatorBinderTests.cs" />
@@ -450,6 +457,8 @@
     <Compile Include="..\UriParser\Visitors\SyntacticTreeVisitorTests.cs" />
     <Compile Include="..\ValidationUtilsTests.cs" />
     <Compile Include="..\WriterUtilsTests.cs" />
+    <Compile Include="..\ScenarioTests\Streaming\ODataJsonLightStreamReadingTests.cs" />
+    <Compile Include="..\ScenarioTests\Streaming\ODataJsonLightStreamWritingTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

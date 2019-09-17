@@ -493,8 +493,20 @@ namespace Microsoft.OData.UriParser
                 return true;
             }
 
-            if (targetReference.IsODataComplexTypeKind() || targetReference.IsODataEntityTypeKind())
+            // We must support conversion from/to untyped.
+            if (sourceReference.IsUntyped() || targetReference.IsUntyped())
             {
+                return true;
+            }
+
+            if (targetReference.IsStructured())
+            {
+                // Both targetReference and sourceReference are cast to IEdmStructuredType,
+                // therefore we must check both types
+                if (!sourceReference.IsODataComplexTypeKind() && !sourceReference.IsODataEntityTypeKind())
+                {
+                    return false;
+                }
                 // for structured types, use IsAssignableFrom
                 return EdmLibraryExtensions.IsAssignableFrom(
                     (IEdmStructuredType)targetReference.Definition,
@@ -519,6 +531,11 @@ namespace Microsoft.OData.UriParser
                 }
 
                 return false;
+            }
+
+            if (targetReference.IsEnum() && sourceReference.IsString())
+            {
+                return true;
             }
 
             IEdmPrimitiveTypeReference sourcePrimitiveTypeReference = sourceReference.AsPrimitiveOrNull();
@@ -801,7 +818,7 @@ namespace Microsoft.OData.UriParser
         private static bool CanPromoteNodeTo(SingleValueNode sourceNodeOrNull, IEdmTypeReference sourceType, IEdmTypeReference targetType)
         {
             Debug.Assert(targetType != null, "targetType != null");
-            Debug.Assert(targetType.IsODataPrimitiveTypeKind(), "Type promotion only supported for primitive types.");
+            Debug.Assert(targetType.IsODataPrimitiveTypeKind() || targetType.IsODataEnumTypeKind(), "Type promotion only supported for primitive or enum types.");
 
             if (sourceType == null)
             {

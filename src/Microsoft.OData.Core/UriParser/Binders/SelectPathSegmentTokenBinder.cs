@@ -9,7 +9,6 @@ namespace Microsoft.OData.UriParser
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Edm.Vocabularies;
     using Microsoft.OData.Edm;
@@ -29,7 +28,7 @@ namespace Microsoft.OData.UriParser
         /// <param name="edmType">the type of the current scope based on type segments.</param>
         /// <param name="resolver">Resolver for uri parser.</param>
         /// <returns>The segment created from the token.</returns>
-        public static ODataPathSegment ConvertNonTypeTokenToSegment(PathSegmentToken tokenIn, IEdmModel model, IEdmStructuredType edmType, ODataUriResolver resolver)
+        public static ODataPathSegment ConvertNonTypeTokenToSegment(PathSegmentToken tokenIn, IEdmModel model, IEdmStructuredType edmType, ODataUriResolver resolver, BindingState state = null)
         {
             ExceptionUtils.CheckArgumentNotNull(resolver, "resolver");
 
@@ -55,6 +54,13 @@ namespace Microsoft.OData.UriParser
                 return new AnnotationSegment(new EdmTerm(namespaceName, termName, EdmCoreModel.Instance.GetUntyped()));
             }
 
+            EndPathToken endPathToken = new EndPathToken(tokenIn.Identifier, null);
+
+            if ((state?.IsCollapsed ?? false) && !(state?.AggregatedPropertyNames?.Contains(endPathToken) ?? false))
+            {
+                throw new ODataException(ODataErrorStrings.ApplyBinder_GroupByPropertyNotPropertyAccessValue(tokenIn.Identifier));
+            }
+
             if (TryBindAsDeclaredProperty(tokenIn, edmType, resolver, out nextSegment))
             {
                 return nextSegment;
@@ -76,7 +82,7 @@ namespace Microsoft.OData.UriParser
                 }
             }
 
-            if (edmType.IsOpen)
+            if (edmType.IsOpen  || (state?.AggregatedPropertyNames?.Contains(endPathToken) ?? false))
             {
                 return new DynamicPathSegment(tokenIn.Identifier);
             }
@@ -130,7 +136,7 @@ namespace Microsoft.OData.UriParser
             Debug.Assert(pathToken != null, "pathToken != null");
             Debug.Assert(entityType != null, "bindingType != null");
 
-            List<IEdmOperation> possibleFunctions = new List<IEdmOperation>();
+            IEnumerable<IEdmOperation> possibleFunctions = Enumerable.Empty<IEdmOperation>();
             IList<string> parameterNames = new List<string>();
 
             // Catch all catchable exceptions as FindDeclaredBoundOperations is implemented by anyone.
@@ -141,7 +147,7 @@ namespace Microsoft.OData.UriParser
                 if (wildCardPos > -1)
                 {
                     string namespaceName = pathToken.Identifier.Substring(0, wildCardPos - 1);
-                    possibleFunctions = model.FindBoundOperations(entityType).Where(o => o.Namespace == namespaceName).ToList();
+                    possibleFunctions = model.FindBoundOperations(entityType).Where(o => o.Namespace == namespaceName);
                 }
                 else
                 {
@@ -154,11 +160,11 @@ namespace Microsoft.OData.UriParser
                     if (parameterNames.Count > 0)
                     {
                         // Always force to use fully qualified name when select operation
-                        possibleFunctions = model.FindBoundOperations(entityType).FilterByName(true, pathToken.Identifier).FilterOperationsByParameterNames(parameterNames, false).ToList();
+                        possibleFunctions = model.FindBoundOperations(entityType).FilterByName(true, pathToken.Identifier).FilterOperationsByParameterNames(parameterNames, false);
                     }
                     else
                     {
-                        possibleFunctions = model.FindBoundOperations(entityType).FilterByName(true, pathToken.Identifier).ToList();
+                        possibleFunctions = model.FindBoundOperations(entityType).FilterByName(true, pathToken.Identifier);
                     }
                 }
             }
@@ -170,25 +176,25 @@ namespace Microsoft.OData.UriParser
                 }
             }
 
-            possibleFunctions = possibleFunctions.EnsureOperationsBoundWithBindingParameter().ToList();
-
             // Only filter if there is more than one and its needed.
-            if (possibleFunctions.Count > 1)
+            if (possibleFunctions.Count() > 1)
             {
-                possibleFunctions = possibleFunctions.FilterBoundOperationsWithSameTypeHierarchyToTypeClosestToBindingType(entityType).ToList();
+                possibleFunctions = possibleFunctions.FilterBoundOperationsWithSameTypeHierarchyToTypeClosestToBindingType(entityType);
             }
 
             // If more than one overload matches, try to select based on optional parameters
-            if (possibleFunctions.Count > 1 && parameterNames.Count > 0)
+            if (possibleFunctions.Count() > 1 && parameterNames.Count > 0)
             {
-                possibleFunctions = possibleFunctions.FindBestOverloadBasedOnParameters(parameterNames).ToList();
+                possibleFunctions = possibleFunctions.FindBestOverloadBasedOnParameters(parameterNames);
             }
 
-            if (possibleFunctions.Count <= 0)
+            if (!possibleFunctions.HasAny())
             {
                 segment = null;
                 return false;
             }
+
+            possibleFunctions.EnsureOperationsBoundWithBindingParameter();
 
             segment = new OperationSegment(possibleFunctions, null /*entitySet*/);
             return true;

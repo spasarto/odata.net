@@ -136,7 +136,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var path = PathFunctionalTestsUtil.RunParsePath("GetCoolPeople(1)");
             path.FirstSegment.Should().BeOfType<OperationImportSegment>();
             path.LastSegment.ShouldBeSimpleKeySegment(1)
-                .And.NavigationSource.Should().BeSameAs(HardCodedTestModel.GetPeopleSet());
+                .NavigationSource.Should().BeSameAs(HardCodedTestModel.GetPeopleSet());
         }
 
         [Fact]
@@ -161,7 +161,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         public void SimpleKeyLookup()
         {
             var path = PathFunctionalTestsUtil.RunParsePath("Dogs(1)");
-            path.LastSegment.ShouldBeSimpleKeySegment(1).And.NavigationSource.Should().BeSameAs(HardCodedTestModel.GetDogsSet());
+            path.LastSegment.ShouldBeSimpleKeySegment(1).NavigationSource.Should().BeSameAs(HardCodedTestModel.GetDogsSet());
         }
 
         [Fact]
@@ -681,7 +681,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         {
             var path = PathFunctionalTestsUtil.RunParsePath("Dogs(1)/MyPeople(2)");
             path.LastSegment.ShouldBeSimpleKeySegment(2)
-                .And.NavigationSource.Should().BeSameAs(HardCodedTestModel.GetPeopleSet());
+                .NavigationSource.Should().BeSameAs(HardCodedTestModel.GetPeopleSet());
             path.NavigationSource().Should().Be(HardCodedTestModel.GetPeopleSet());
         }
 
@@ -1152,8 +1152,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             };
             var path = parser.ParsePath();
 
-            path.FirstSegment.ShouldBeBatchReferenceSegment(HardCodedTestModel.GetDogType())
-                .And.ContentId.Should().Be("$42");
+            Assert.Equal("$42", path.FirstSegment.ShouldBeBatchReferenceSegment(HardCodedTestModel.GetDogType()).ContentId);
             path.LastSegment.ShouldBeNavigationPropertySegment(HardCodedTestModel.GetDogMyPeopleNavProp());
             path.FirstSegment.TranslateWith(new DetermineNavigationSourceTranslator()).Should().Be(HardCodedTestModel.GetDogsSet());
         }
@@ -1437,8 +1436,8 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             path.Count.Should().Be(2);
             var keyInfo = path.Last().As<KeySegment>().Keys.Single();
             keyInfo.Key.Should().Be("PetCategorysColorPattern");
-            keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().TypeName.Should().Be("Fully.Qualified.Namespace.ColorPattern");
-            keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().Value.Should().Be("22");
+            keyInfo.Value.As<ODataEnumValue>().TypeName.Should().Be("Fully.Qualified.Namespace.ColorPattern");
+            keyInfo.Value.As<ODataEnumValue>().Value.Should().Be("22");
         }
         #endregion
 

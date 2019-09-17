@@ -36,7 +36,7 @@ namespace Microsoft.OData.Tests.UriParser.Binders
             var result = this.propertyBinder.BindEndPath(token);
 
             result.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPersonShoeProp()).
-                And.Source.ShouldBeResourceRangeVariableReferenceNode(ExpressionConstants.It);
+                Source.ShouldBeResourceRangeVariableReferenceNode(ExpressionConstants.It);
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace Microsoft.OData.Tests.UriParser.Binders
             var result = this.propertyBinder.BindEndPath(token);
 
             result.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetDogColorProp()).
-                And.Source.ShouldBeResourceRangeVariableReferenceNode("a");
+                Source.ShouldBeResourceRangeVariableReferenceNode("a");
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace Microsoft.OData.Tests.UriParser.Binders
             var result = this.propertyBinder.BindEndPath(token);
 
             result.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPersonShoeProp()).
-                And.Source.ShouldBeResourceRangeVariableReferenceNode(ExpressionConstants.It);
+                Source.ShouldBeResourceRangeVariableReferenceNode(ExpressionConstants.It);
         }
 
         [Fact]
@@ -251,7 +251,7 @@ namespace Microsoft.OData.Tests.UriParser.Binders
             SingleValueNode parentNode = new ResourceRangeVariableReferenceNode("a", new ResourceRangeVariable("a", HardCodedTestModel.GetPersonTypeReference(), entityCollectionNode));
 
             var state = new BindingState(this.configuration);
-            state.AggregatedPropertyNames = new List<string> { "Color" };
+            state.AggregatedPropertyNames = new HashSet<EndPathToken> { new EndPathToken("Color", new RangeVariableToken("a")) };
             var metadataBinder = new MetadataBinder(state);
             var endPathBinder = new EndPathBinder(metadataBinder.Bind, state);
             var propertyNode = endPathBinder.GeneratePropertyAccessQueryForOpenType(

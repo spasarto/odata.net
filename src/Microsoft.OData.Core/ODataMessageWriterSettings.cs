@@ -4,10 +4,13 @@
 // </copyright>
 //---------------------------------------------------------------------
 
+using Microsoft.OData.Evaluation;
+
 namespace Microsoft.OData
 {
     #region Namespaces
     using System;
+    using Microsoft.OData.Buffers;
     using Microsoft.OData.UriParser;
     #endregion Namespaces
 
@@ -134,6 +137,11 @@ namespace Microsoft.OData
         public string JsonPCallback { get; set; }
 
         /// <summary>
+        /// Get/sets the character buffer pool.
+        /// </summary>
+        public ICharArrayPool ArrayPool { get; set; }
+
+        /// <summary>
         /// Quotas to use for limiting resource consumption when writing an OData message.
         /// </summary>
         public ODataMessageQuotas MessageQuotas
@@ -167,6 +175,11 @@ namespace Microsoft.OData
         /// <summary>Gets or sets the OData protocol version to be used for writing payloads. </summary>
         /// <returns>The OData protocol version to be used for writing payloads.</returns>
         public ODataVersion? Version { get; set; }
+
+        /// <summary>
+        /// Informs the metadata builder which properties, functions, actions, links to omit.
+        /// </summary>
+        public ODataMetadataSelector MetadataSelector { get; set; }
 
         /// <summary>
         /// Gets the validator corresponding to the validation settings.

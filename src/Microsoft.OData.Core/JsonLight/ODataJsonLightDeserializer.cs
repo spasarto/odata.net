@@ -466,6 +466,9 @@ namespace Microsoft.OData.JsonLight
 
             while (propertyParsingResult == PropertyParsingResult.CustomInstanceAnnotation && this.ShouldSkipCustomInstanceAnnotation(propertyName))
             {
+                // Read over the property name
+                this.JsonReader.Read();
+
                 // Skip over the instance annotation value and don't report it to the OM.
                 this.JsonReader.SkipValue();
                 propertyParsingResult = this.ParseProperty(
@@ -562,7 +565,7 @@ namespace Microsoft.OData.JsonLight
             Debug.Assert(simplifiedPropertyName.IndexOf('@') == 0, "simplifiedPropertyName must start with '@'.");
             Debug.Assert(simplifiedPropertyName.IndexOf('.') == -1, "simplifiedPropertyName must not be namespace-qualified.");
 
-            return this.JsonLightInputContext.ODataSimplifiedOptions.EnableReadingODataAnnotationWithoutPrefix &&
+            return this.JsonLightInputContext.OptionalODataPrefix &&
                    string.CompareOrdinal(simplifiedPropertyName, propertyName) == 0;
         }
 
@@ -573,7 +576,7 @@ namespace Microsoft.OData.JsonLight
         /// <returns>The complete OData annotation name.</returns>
         protected string CompleteSimplifiedODataAnnotation(string annotationName)
         {
-            if (this.JsonLightInputContext.ODataSimplifiedOptions.EnableReadingODataAnnotationWithoutPrefix &&
+            if (this.JsonLightInputContext.OptionalODataPrefix &&
                 annotationName.IndexOf('.') == -1)
             {
                 annotationName = JsonLightConstants.ODataAnnotationNamespacePrefix + annotationName;
@@ -765,8 +768,9 @@ namespace Microsoft.OData.JsonLight
                 }
 
                 // We are encountering the property name for the first time.
-                // Read over the property name.
-                this.JsonReader.Read();
+                // Don't read over property name, as that would cause the buffering reader to read ahead in the StartObject
+                // state, which would break our ability to stream inline json. Instead, callers of ParseProperty will have to
+                // call this.JsonReader.Read() as appropriate to read past the property name.
                 parsedPropertyName = propertyNameFromReader;
 
                 if (!isInstanceAnnotation && ODataJsonLightUtils.IsMetadataReferenceProperty(propertyNameFromReader))

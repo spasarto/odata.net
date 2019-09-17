@@ -74,17 +74,17 @@ namespace Microsoft.OData.Tests.UriParser.Metadata
         private static void VerifyEnumVsStringFilterExpression(FilterClause filter)
         {
             var enumtypeRef = new EdmEnumTypeReference(UriEdmHelpers.FindEnumTypeFromModel(HardCodedTestModel.TestModel, "Fully.Qualified.Namespace.ColorPattern"), true);
-            var bin = filter.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal).And;
+            var bin = filter.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal);
             bin.Left.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPet2PetColorPatternProperty());
-            bin.Right.ShouldBeEnumNode(new ODataEnumValue("2", enumtypeRef.FullName()));
+            bin.Right.ShouldBeEnumNode(enumtypeRef.EnumDefinition(), "2");
         }
 
         private static void VerifyEnumVsStringFilterExpressionReverse(FilterClause filter)
         {
             var enumtypeRef = new EdmEnumTypeReference(UriEdmHelpers.FindEnumTypeFromModel(HardCodedTestModel.TestModel, "Fully.Qualified.Namespace.ColorPattern"), true);
-            var bin = filter.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal).And;
+            var bin = filter.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal);
             bin.Right.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPet2PetColorPatternProperty());
-            bin.Left.ShouldBeEnumNode(new ODataEnumValue("2", enumtypeRef.FullName()));
+            bin.Left.ShouldBeEnumNode(enumtypeRef.EnumDefinition(), "2");
         }
 
         [Fact]
@@ -104,7 +104,7 @@ namespace Microsoft.OData.Tests.UriParser.Metadata
             Uri query = new Uri("People?$orderby=FavoriteDate add 3", UriKind.Relative);
             ODataUriParser parser = new ODataUriParser(HardCodedTestModel.TestModel, query) { Resolver = new MiscPromotionResolver() };
             var clause = parser.ParseOrderBy();
-            var node = clause.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Add).And;
+            var node = clause.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Add);
             node.TypeReference.IsBinary().Should().BeTrue();
             node.Left.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPersonFavoriteDateProp());
             node.Right.ShouldBeConstantQueryNode("3");
@@ -210,8 +210,8 @@ namespace Microsoft.OData.Tests.UriParser.Metadata
                 {
                     var keyInfo = path.LastSegment.As<KeySegment>().Keys.Single();
                     keyInfo.Key.Should().Be("color");
-                    keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().TypeName.Should().Be("TestNS.Color");
-                    keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().Value.Should().Be("2");
+                    keyInfo.Value.As<ODataEnumValue>().TypeName.Should().Be("TestNS.Color");
+                    keyInfo.Value.As<ODataEnumValue>().Value.Should().Be("2");
                 },
                 Strings.RequestUriProcessor_SyntaxError);
         }
@@ -230,8 +230,8 @@ namespace Microsoft.OData.Tests.UriParser.Metadata
                 {
                     var keyInfo = path.LastSegment.As<KeySegment>().Keys.Single();
                     keyInfo.Key.Should().Be("color");
-                    keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().TypeName.Should().Be("TestNS.Color");
-                    keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().Value.Should().Be("2");
+                    keyInfo.Value.As<ODataEnumValue>().TypeName.Should().Be("TestNS.Color");
+                    keyInfo.Value.As<ODataEnumValue>().Value.Should().Be("2");
                 },
                 Strings.RequestUriProcessor_SyntaxError);
         }
@@ -249,8 +249,8 @@ namespace Microsoft.OData.Tests.UriParser.Metadata
                     keyList.Count.Should().Be(2);
                     var keyInfo = keyList[0];
                     keyInfo.Key.Should().Be("color");
-                    keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().TypeName.Should().Be("TestNS.Color");
-                    keyInfo.Value.As<ConstantNode>().Value.As<ODataEnumValue>().Value.Should().Be("2");
+                    keyInfo.Value.As<ODataEnumValue>().TypeName.Should().Be("TestNS.Color");
+                    keyInfo.Value.As<ODataEnumValue>().Value.Should().Be("2");
                     var keyInfo1 = keyList[1];
                     keyInfo1.Key.Should().Be("id");
                     keyInfo1.Value.Should().Be(1);

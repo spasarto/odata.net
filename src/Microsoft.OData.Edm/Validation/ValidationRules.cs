@@ -1011,6 +1011,50 @@ namespace Microsoft.OData.Edm.Validation
                     }
                 });
 
+        /// <summary>
+        /// Validates that the escape functions are unique.
+        /// </summary>
+        public static readonly ValidationRule<IEdmEntityType> EntityTypeBoundEscapeFunctionMustBeUnique =
+            new ValidationRule<IEdmEntityType>(
+                (context, entityType) =>
+                {
+                    IList<IEdmFunction> composableEscapeFunctions = new List<IEdmFunction>();
+                    IList<IEdmFunction> nonComposableEscapeFunctions = new List<IEdmFunction>();
+                    foreach (var function in context.Model.FindBoundOperations(entityType).Where(o => o.IsFunction()).OfType<IEdmFunction>())
+                    {
+                        if (!context.Model.IsUrlEscapeFunction(function))
+                        {
+                            continue;
+                        }
+
+                        if (function.IsComposable)
+                        {
+                            composableEscapeFunctions.Add(function);
+                        }
+                        else
+                        {
+                            nonComposableEscapeFunctions.Add(function);
+                        }
+                    }
+
+                    if (composableEscapeFunctions.Count() > 1)
+                    {
+                        string escapeFunctionString = String.Join(",", composableEscapeFunctions.Select(c => c.Name).ToArray());
+                        context.AddError(
+                                entityType.Location(),
+                                EdmErrorCode.EntityComposableBoundEscapeFunctionMustBeLessOne,
+                                Strings.EdmModel_Validator_Semantic_EntityComposableBoundEscapeFunctionMustBeLessOne(entityType.FullName(), escapeFunctionString));
+                    }
+
+                    if (nonComposableEscapeFunctions.Count() > 1)
+                    {
+                        string escapeFunctionString = String.Join(",", nonComposableEscapeFunctions.Select(c => c.Name).ToArray());
+                        context.AddError(
+                                entityType.Location(),
+                                EdmErrorCode.EntityNoncomposableBoundEscapeFunctionMustBeLessOne,
+                                Strings.EdmModel_Validator_Semantic_EntityNoncomposableBoundEscapeFunctionMustBeLessOne(entityType.FullName(), escapeFunctionString));
+                    }
+                });
         #endregion
 
         #region IEdmEntityReferenceType
@@ -1920,14 +1964,6 @@ namespace Microsoft.OData.Edm.Validation
                        navProp = navProps.LastOrDefault().Key;
                    }
 
-                   if (navProp != null && navProp.TargetMultiplicity() == EdmMultiplicity.Many)
-                   {
-                       if (returnCollectionType == null)
-                       {
-                           context.AddError(operation.Location(), EdmErrorCode.OperationWithEntitySetPathResolvesToEntityTypeMismatchesCollectionEntityTypeReturnType, Strings.EdmModel_Validator_Semantic_OperationWithEntitySetPathResolvesToEntityTypeMismatchesCollectionEntityTypeReturnType(operation.Name));
-                       }
-                   }
-
                    if (navProp != null && navProp.TargetMultiplicity() != EdmMultiplicity.Many)
                    {
                        if (returnCollectionType != null)
@@ -2505,13 +2541,39 @@ namespace Microsoft.OData.Edm.Validation
                     }
                 });
 
+        /// <summary>
+        /// Validates that a vocabulary annotations target can be allowed in the AppliesTo of the term.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+        public static readonly ValidationRule<IEdmVocabularyAnnotation> VocabularyAnnotationTargetAllowedApplyToElement =
+            new ValidationRule<IEdmVocabularyAnnotation>(
+                (context, annotation) =>
+                {
+                    IEdmTerm term = annotation.Term;
+                    if (term.AppliesTo == null)
+                    {
+                        return;
+                    }
+
+                    var hash = new HashSet<string>(term.AppliesTo.Split(' ').Select(e => e.Trim()));
+                    string symbolicString = annotation.Target.GetSymbolicString();
+                    if (hash.Contains(symbolicString))
+                    {
+                        return;
+                    }
+
+                    context.AddError(
+                        annotation.Location(),
+                        EdmErrorCode.AnnotationApplyToNotAllowedAnnotatable,
+                        Strings.EdmModel_Validator_Semantic_VocabularyAnnotationApplyToNotAllowedAnnotatable(EdmUtil.FullyQualifiedName(annotation.Target), term.AppliesTo, term.FullName()));
+                });
         #endregion
 
         #region IEdmPropertyValueBinding
 
-        /// <summary>
-        /// Validates that the value of a property value binding is the correct type.
-        /// </summary>
+                /// <summary>
+                /// Validates that the value of a property value binding is the correct type.
+                /// </summary>
         public static readonly ValidationRule<IEdmPropertyValueBinding> PropertyValueBindingValueIsCorrectType =
             new ValidationRule<IEdmPropertyValueBinding>(
                 (context, binding) =>

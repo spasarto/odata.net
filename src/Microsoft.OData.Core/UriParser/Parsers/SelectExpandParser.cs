@@ -23,9 +23,9 @@ namespace Microsoft.OData.UriParser
         private readonly ODataUriResolver resolver;
 
         /// <summary>
-        /// The parent entity type for expand option in case expand option is star, get all parent entity navigation properties, it is an IEdmStructuredType.
+        /// The parent structured type for expand option in case expand option is star, get all parent structured navigation properties, it is an IEdmStructuredType.
         /// </summary>
-        private readonly IEdmStructuredType parentEntityType;
+        private readonly IEdmStructuredType parentStructuredType;
 
         /// <summary>
         /// The maximum allowable recursive depth.
@@ -43,9 +43,9 @@ namespace Microsoft.OData.UriParser
         private readonly bool enableCaseInsensitiveBuiltinIdentifier;
 
         /// <summary>
-        /// Object to handle the parsing of any nested expand options that we discover.
+        /// Object to handle the parsing of any nested select/expand options that we discover.
         /// </summary>
-        private ExpandOptionParser expandOptionParser;
+        private SelectExpandOptionParser selectExpandOptionParser;
 
         /// <summary>
         /// Lexer used to parse an the $select or $expand string.
@@ -93,21 +93,47 @@ namespace Microsoft.OData.UriParser
         /// </summary>
         /// <param name="resolver">the URI resolver which will resolve different kinds of Uri parsing context</param>
         /// <param name="clauseToParse">the clause to parse</param>
-        /// <param name="parentEntityType">the parent entity type for expand option</param>
+        /// <param name="parentStructuredType">the parent structured type for expand option</param>
         /// <param name="maxRecursiveDepth">max recursive depth</param>
         /// <param name="enableCaseInsensitiveBuiltinIdentifier">Whether to allow case insensitive for builtin identifier.</param>
         /// <param name="enableNoDollarQueryOptions">Whether to enable no dollar query options.</param>
         public SelectExpandParser(
             ODataUriResolver resolver,
             string clauseToParse,
-            IEdmStructuredType parentEntityType,
+            IEdmStructuredType parentStructuredType,
             int maxRecursiveDepth,
             bool enableCaseInsensitiveBuiltinIdentifier = false,
             bool enableNoDollarQueryOptions = false)
             : this(clauseToParse, maxRecursiveDepth, enableCaseInsensitiveBuiltinIdentifier, enableNoDollarQueryOptions)
         {
             this.resolver = resolver;
-            this.parentEntityType = parentEntityType;
+            this.parentStructuredType = parentStructuredType;
+        }
+
+        /// <summary>
+        /// Gets the parser for inner select/expand options.
+        /// </summary>
+        internal SelectExpandOptionParser SelectExpandOptionParser
+        {
+            get
+            {
+                if (this.selectExpandOptionParser == null)
+                {
+                    this.selectExpandOptionParser = new SelectExpandOptionParser(
+                        this.resolver,
+                        this.parentStructuredType,
+                        this.maxRecursiveDepth,
+                        this.enableCaseInsensitiveBuiltinIdentifier,
+                        this.enableNoDollarQueryOptions)
+                    {
+                        MaxFilterDepth = MaxFilterDepth,
+                        MaxOrderByDepth = MaxOrderByDepth,
+                        MaxSearchDepth = MaxSearchDepth
+                    };
+                }
+
+                return this.selectExpandOptionParser;
+            }
         }
 
         /// <summary>
@@ -154,12 +180,23 @@ namespace Microsoft.OData.UriParser
         /// Parses a single term in a comma separated list of things to select.
         /// </summary>
         /// <returns>A token representing thing to select.</returns>
-        private PathSegmentToken ParseSingleSelectTerm()
+        private SelectTermToken ParseSingleSelectTerm()
         {
             this.isSelect = true;
 
             var termParser = new SelectExpandTermParser(this.lexer, this.MaxPathDepth, this.isSelect);
-            return termParser.ParseTerm();
+            PathSegmentToken pathToken = termParser.ParseTerm();
+
+            string optionsText = null;
+            if (this.lexer.CurrentToken.Kind == ExpressionTokenKind.OpenParen)
+            {
+                optionsText = this.lexer.AdvanceThroughBalancedParentheticalExpression();
+
+                // Move lexer to what is after the parenthesis expression. Now CurrentToken will be the next thing.
+                this.lexer.NextToken();
+            }
+
+            return this.SelectExpandOptionParser.BuildSelectTermToken(pathToken, optionsText);
         }
 
         /// <summary>
@@ -182,22 +219,7 @@ namespace Microsoft.OData.UriParser
                 this.lexer.NextToken();
             }
 
-            if (expandOptionParser == null)
-            {
-                expandOptionParser = new ExpandOptionParser(
-                    this.resolver,
-                    this.parentEntityType,
-                    this.maxRecursiveDepth,
-                    this.enableCaseInsensitiveBuiltinIdentifier,
-                    this.enableNoDollarQueryOptions)
-                {
-                    MaxFilterDepth = MaxFilterDepth,
-                    MaxOrderByDepth = MaxOrderByDepth,
-                    MaxSearchDepth = MaxSearchDepth
-                };
-            }
-
-            return this.expandOptionParser.BuildExpandTermToken(pathToken, optionsText);
+            return this.SelectExpandOptionParser.BuildExpandTermToken(pathToken, optionsText);
         }
 
         /// <summary>
@@ -264,7 +286,7 @@ namespace Microsoft.OData.UriParser
                 }
             }
 
-            // If there is * with other property, per specification, other propreties will take precedence over the star operator
+            // If there is * with other property, per specification, other properties will take precedence over the star operator
             if (starTermTokens.Count > 0)
             {
                 List<string> explicitedTokens = new List<string>();
@@ -311,9 +333,9 @@ namespace Microsoft.OData.UriParser
         /// <param name="ctor">A method to construct the final token from the term tokens.</param>
         /// <param name="termParsingFunc">A method to parse each individual term.</param>
         /// <returns>A token representing the entire $select clause syntactically.</returns>
-        private SelectToken ParseCommaSeperatedSelectList(Func<IEnumerable<PathSegmentToken>, SelectToken> ctor, Func<PathSegmentToken> termParsingFunc)
+        private SelectToken ParseCommaSeperatedSelectList(Func<IEnumerable<SelectTermToken>, SelectToken> ctor, Func<SelectTermToken> termParsingFunc)
         {
-            List<PathSegmentToken> termTokens = new List<PathSegmentToken>();
+            List<SelectTermToken> termTokens = new List<SelectTermToken>();
 
             // This happens if we were passed a null string
             if (this.lexer == null)

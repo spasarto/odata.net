@@ -14,6 +14,7 @@ using Microsoft.OData.UriParser;
 using Microsoft.OData.Edm;
 using Xunit;
 using ODataErrorStrings = Microsoft.OData.Strings;
+using Microsoft.OData.UriParser.Aggregation;
 
 namespace Microsoft.OData.Tests.ScenarioTests.UriParser
 {
@@ -23,7 +24,6 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
     public class SelectExpandFunctionalTests
     {
         #region $select with no $expand
-
         [Fact]
         public void SelectSingleDeclaredPropertySucceeds()
         {
@@ -241,8 +241,8 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         [Fact]
         public void CallingAFunctionIsNotRecognizedInSelect()
         {
-            Action parse = () => ParseSingleSelectForPerson("HasDog(inOffice=true)");
-            parse.ShouldThrow<ODataException>().Where(e => e.Message.Contains("HasDog(inOffice=true)"));
+            Action test = () => ParseSingleSelectForPerson("HasDog(inOffice=true)");
+            test.Throws<ODataException>(ODataErrorStrings.UriSelectParser_TermIsNotValid("(inOffice=true)"));
         }
 
         [Fact]
@@ -363,7 +363,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         [Fact]
         public void NamespaceQualifiedActionNameOnOpenTypeShouldBeInterpretedAsAnOperation()
         {
-            ParseSingleSelectForPainting("Fully.Qualified.Namespace.Restore").ShouldBeSelectedItemOfType<PathSelectItem>().And.SelectedPath.LastSegment.ShouldBeOperationSegment(HardCodedTestModel.GetRestoreAction());
+            ParseSingleSelectForPainting("Fully.Qualified.Namespace.Restore").ShouldBeSelectedItemOfType<PathSelectItem>().SelectedPath.LastSegment.ShouldBeOperationSegment(HardCodedTestModel.GetRestoreAction());
         }
 
         [Fact]
@@ -487,7 +487,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var item = ParseSingleSelectForPerson("Fully.Qualified.Namespace.*");
 
             item.ShouldBeSelectedItemOfType<NamespaceQualifiedWildcardSelectItem>()
-                .And.Namespace.Should().Be("Fully.Qualified.Namespace");
+                .Namespace.Should().Be("Fully.Qualified.Namespace");
         }
 
         [Fact]
@@ -520,7 +520,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
                 null);
             results.SelectedItems.Should().HaveCount(1);
             results.SelectedItems.Single().ShouldBeSelectedItemOfType<PathSelectItem>()
-                .And.SelectedPath.LastSegment.ShouldBeNavigationPropertySegment(HardCodedTestModel.GetPersonMyDogNavProp());
+                .SelectedPath.LastSegment.ShouldBeNavigationPropertySegment(HardCodedTestModel.GetPersonMyDogNavProp());
         }
 
         #endregion
@@ -534,7 +534,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var item = ParseSingleExpandForPerson("MyDog");
 
             item.ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).
-                And.SelectAndExpand.AllSelected.Should().BeTrue();
+                SelectAndExpand.AllSelected.Should().BeTrue();
         }
 
         [Fact]
@@ -585,7 +585,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             results.AllSelected.Should().BeTrue();
 
             SelectItem expandItem = results.SelectedItems.Single(x => x.GetType() == typeof(ExpandedReferenceSelectItem));
-            var orderbyClause = expandItem.ShouldBeExpansionWithRefFor(HardCodedTestModel.GetPersonMyPet2SetNavProp()).And.OrderByOption;
+            var orderbyClause = expandItem.ShouldBeExpansionWithRefFor(HardCodedTestModel.GetPersonMyPet2SetNavProp()).OrderByOption;
             orderbyClause.Expression.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPet2PetColorPatternProperty());
             orderbyClause.Direction.Should().Be(OrderByDirection.Descending);
         }
@@ -602,11 +602,11 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         {
             var topLeveItem = RunParseSelectExpand(null, "MyDog($expand=MyPeople($expand=MyPaintings))", HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet());
 
-            var myDogItem = topLeveItem.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).And;
+            var myDogItem = topLeveItem.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp());
             myDogItem.SelectAndExpand.AllSelected.Should().BeTrue();
-            var myPeopleItem = myDogItem.SelectAndExpand.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp()).And;
+            var myPeopleItem = myDogItem.SelectAndExpand.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp());
             myPeopleItem.SelectAndExpand.AllSelected.Should().BeTrue();
-            var myPaintingsItem = myPeopleItem.SelectAndExpand.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyPaintingsNavProp()).And;
+            var myPaintingsItem = myPeopleItem.SelectAndExpand.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyPaintingsNavProp());
             myPaintingsItem.SelectAndExpand.AllSelected.Should().BeTrue();
             myPaintingsItem.SelectAndExpand.SelectedItems.Should().BeEmpty();
         }
@@ -647,8 +647,8 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             AssertExpandString("MyDog($expand=MyPeople)", results);
 
             results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp())
-                   .And.SelectAndExpand.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp())
-                   .And.SelectAndExpand.SelectedItems.Should().BeEmpty();
+                   .SelectAndExpand.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp())
+                   .SelectAndExpand.SelectedItems.Should().BeEmpty();
         }
 
         [Fact]
@@ -704,7 +704,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             results.AllSelected.Should().BeTrue();
 
             SelectItem expandItem = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem);
-            var orderbyClause = expandItem.ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyPet2SetNavProp()).And.OrderByOption;
+            var orderbyClause = expandItem.ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyPet2SetNavProp()).OrderByOption;
             orderbyClause.Expression.ShouldBeSingleValuePropertyAccessQueryNode(HardCodedTestModel.GetPet2PetColorPatternProperty());
             orderbyClause.Direction.Should().Be(OrderByDirection.Descending);
         }
@@ -797,7 +797,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var results = RunParseSelectExpand("MyPeople", "MyPeople($select=Name)", HardCodedTestModel.GetDogType(), HardCodedTestModel.GetDogsSet());
 
             results.AllSelected.Should().BeFalse();
-            var myPeople = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp()).And.SelectAndExpand;
+            var myPeople = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp()).SelectAndExpand;
             myPeople.SelectedItems.Single().ShouldBePathSelectionItem(new ODataPath(new PropertySegment(HardCodedTestModel.GetPersonNameProp())));
             myPeople.AllSelected.Should().BeFalse();
 
@@ -811,7 +811,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var results = RunParseSelectExpand(null, "MyPeople($select=Name)", HardCodedTestModel.GetDogType(), HardCodedTestModel.GetDogsSet());
 
             results.AllSelected.Should().BeTrue();
-            var myPeople = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp()).And.SelectAndExpand;
+            var myPeople = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp()).SelectAndExpand;
             myPeople.SelectedItems.Single().ShouldBePathSelectionItem(new ODataPath(new PropertySegment(HardCodedTestModel.GetPersonNameProp())));
             myPeople.AllSelected.Should().BeFalse();
 
@@ -901,12 +901,12 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             items.Should().HaveCount(4);
             results.AllSelected.Should().BeFalse();
 
-            SelectExpandClause myDog = items[0].ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).And.SelectAndExpand;
+            SelectExpandClause myDog = items[0].ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).SelectAndExpand;
             myDog.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetDogMyPeopleNavProp())
-                    .And.SelectAndExpand.SelectedItems.Single().ShouldBePathSelectionItem(new ODataPath(new PropertySegment(HardCodedTestModel.GetPersonNameProp())));
+                    .SelectAndExpand.SelectedItems.Single().ShouldBePathSelectionItem(new ODataPath(new PropertySegment(HardCodedTestModel.GetPersonNameProp())));
             myDog.AllSelected.Should().BeTrue();
 
-            SelectExpandClause myFavoritePainting = items[1].ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyFavoritePaintingNavProp()).And.SelectAndExpand;
+            SelectExpandClause myFavoritePainting = items[1].ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyFavoritePaintingNavProp()).SelectAndExpand;
             myFavoritePainting.SelectedItems.Single().ShouldBePathSelectionItem(new ODataPath(new PropertySegment(HardCodedTestModel.GetPaintingArtistProp())));
             myFavoritePainting.AllSelected.Should().BeFalse();
         }
@@ -925,7 +925,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
 
             results.AllSelected.Should().BeFalse();
             results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).
-                And.SelectAndExpand.AllSelected.Should().BeTrue();
+                SelectAndExpand.AllSelected.Should().BeTrue();
         }
 
         [Fact]
@@ -995,7 +995,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
                 HardCodedTestModel.GetPersonType(), null);
 
             results.AllSelected.Should().BeFalse();
-            var myPaintings = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyPaintingsNavProp()).And.SelectAndExpand;
+            var myPaintings = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyPaintingsNavProp()).SelectAndExpand;
             myPaintings.SelectedItems.Should().HaveCount(1).And.ContainItemsAssignableTo<WildcardSelectItem>();
             myPaintings.AllSelected.Should().BeFalse();
         }
@@ -1076,10 +1076,10 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             AssertSelectString("MyDog", results);
             AssertExpandString("MyDog($expand=MyPeople($select=*))", results);
 
-            var clauseForMyDog = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).And.SelectAndExpand;
+            var clauseForMyDog = results.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeExpansionFor(HardCodedTestModel.GetPersonMyDogNavProp()).SelectAndExpand;
             clauseForMyDog.SelectedItems.Should().HaveCount(1);
             clauseForMyDog.AllSelected.Should().BeTrue();
-            var clauseForMyPeople = clauseForMyDog.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeSelectedItemOfType<ExpandedNavigationSelectItem>().And.SelectAndExpand;
+            var clauseForMyPeople = clauseForMyDog.SelectedItems.Single(x => x is ExpandedNavigationSelectItem).ShouldBeSelectedItemOfType<ExpandedNavigationSelectItem>().SelectAndExpand;
             clauseForMyPeople.SelectedItems.Single().ShouldBeSelectedItemOfType<WildcardSelectItem>();
             clauseForMyPeople.AllSelected.Should().BeFalse();
         }
@@ -1090,7 +1090,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var results = RunParseSelectExpand("City", null, HardCodedTestModel.GetAddressType(), null);
             results.SelectedItems.Should().HaveCount(1);
             results.SelectedItems.Single().ShouldBeSelectedItemOfType<PathSelectItem>()
-                .And.SelectedPath.Single().ShouldBePropertySegment(HardCodedTestModel.GetAddressCityProperty());
+                .SelectedPath.Single().ShouldBePropertySegment(HardCodedTestModel.GetAddressCityProperty());
         }
 
         [Fact]
@@ -1099,7 +1099,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var results = RunParseSelectExpand("PetColorPattern", null, HardCodedTestModel.GetPet2Type(), null);
             results.SelectedItems.Should().HaveCount(1);
             results.SelectedItems.Single().ShouldBeSelectedItemOfType<PathSelectItem>()
-                .And.SelectedPath.Single().ShouldBePropertySegment(HardCodedTestModel.GetPet2PetColorPatternProperty());
+                .SelectedPath.Single().ShouldBePropertySegment(HardCodedTestModel.GetPet2PetColorPatternProperty());
         }
 
         //[Fact(Skip = "#622: support NavProps in complex types, make sure we can select and expand them.")]
@@ -1208,17 +1208,13 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         }
 
         [Fact]
-        public void DuplicatePropertiesAreCollapsed()
+        public void DuplicatePropertiesThrows()
         {
-
             const string expandClauseText = "";
             const string selectClauseText = "Name, Name";
-            const string expectedExpand = "";
-            const string expectedSelect = "Name";
 
-            var results = RunParseSelectExpand(selectClauseText, expandClauseText, HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet());
-            AssertExpandString(expectedExpand, results);
-            AssertSelectString(expectedSelect, results);
+            Action test = () => RunParseSelectExpand(selectClauseText, expandClauseText, HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet());
+            test.Throws<ODataException>("Found mutliple select terms with same select path 'Name' at one $select, please combine them together.");
         }
 
         [Fact]
@@ -1287,10 +1283,323 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         public void SelectAndExpandShouldFailOnSelectComplexPropertiesWithWrongTypeCast()
         {
             Action parse = () => RunParseSelectExpand("Name,MyAddress/Fully.Qualified.Namespace.OpenAddress/HomeNO,MyDog", "MyDog($select=Color)", HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet());
-            parse.ShouldThrow<ODataException>().WithMessage(ODataErrorStrings.SelectBinder_MultiLevelPathInSelect);
+
+            parse.Throws<ODataException>(ODataErrorStrings.SelectBinder_MultiLevelPathInSelect);
         }
 
         // TODO: Tests cases with query options
+
+        #endregion
+
+        #region $select with nested query options
+        [Fact]
+        public void SelectWithNestedFilterWorks()
+        {
+            // Arrange
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "PreviousAddresses($filter=Street eq 'abc')"}
+                });
+
+            // Act
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+
+            // Assert
+            Assert.NotNull(selectClause);
+            Assert.False(selectClause.AllSelected);
+            var pathSelectItem = Assert.IsType<PathSelectItem>(Assert.Single(selectClause.SelectedItems));
+            pathSelectItem.SelectedPath.Equals(new ODataSelectPath(new PropertySegment(HardCodedTestModel.GetPersonPreviousAddressesProp())));
+
+            Assert.NotNull(pathSelectItem.FilterOption);
+            pathSelectItem.FilterOption.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal);
+        }
+
+        [Fact]
+        public void SelectWithNestedTopSkipAndCountWorks()
+        {
+            // Arrange
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "PreviousAddresses($top=4;$skip=2;$count=true)"}
+                });
+
+            // Act
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+
+            // Assert
+            Assert.NotNull(selectClause);
+            Assert.False(selectClause.AllSelected);
+            var pathSelectItem = Assert.IsType<PathSelectItem>(Assert.Single(selectClause.SelectedItems));
+            pathSelectItem.SelectedPath.Equals(new ODataSelectPath(new PropertySegment(HardCodedTestModel.GetPersonPreviousAddressesProp())));
+
+            Assert.NotNull(pathSelectItem.TopOption);
+            Assert.Equal(4, pathSelectItem.TopOption);
+
+            Assert.NotNull(pathSelectItem.TopOption);
+            Assert.Equal(2, pathSelectItem.SkipOption);
+        }
+
+        [Fact]
+        public void SelectWithNestedSelectWorks()
+        {
+            // Arrange
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "MyAddress($select=City,MyNeighbors($count=true))"}
+                });
+
+            // Act
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+
+            // Assert
+            Assert.NotNull(selectClause);
+            Assert.False(selectClause.AllSelected);
+            var pathSelectItem = Assert.IsType<PathSelectItem>(Assert.Single(selectClause.SelectedItems));
+            pathSelectItem.SelectedPath.Equals(new ODataSelectPath(new PropertySegment(HardCodedTestModel.GetPersonAddressProp())));
+
+            SelectExpandClause subLevelSelect = pathSelectItem.SelectAndExpand;
+            Assert.NotNull(subLevelSelect);
+            Assert.False(subLevelSelect.AllSelected);
+            Assert.Equal(2, subLevelSelect.SelectedItems.Count()); // City & MyNeighbors
+
+            // City
+            PathSelectItem subLevelPathSelect = Assert.IsType<PathSelectItem>(subLevelSelect.SelectedItems.First());
+            subLevelPathSelect.SelectedPath.Equals(new ODataSelectPath(new PropertySegment(HardCodedTestModel.GetAddressCityProperty())));
+            Assert.Null(subLevelPathSelect.CountOption);
+
+            // MyNeighbors
+            subLevelPathSelect = Assert.IsType<PathSelectItem>(subLevelSelect.SelectedItems.Last());
+            subLevelPathSelect.SelectedPath.Equals(new ODataSelectPath(new PropertySegment(HardCodedTestModel.GetAddressMyNeighborsProperty())));
+            Assert.NotNull(subLevelPathSelect.CountOption);
+            Assert.True(subLevelPathSelect.CountOption);
+        }
+
+        [Fact]
+        public void SelectWithNestedWildcardWorks()
+        {
+            // Arrange
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "PreviousAddresses($select=*)"}
+                });
+
+            // Act
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+
+            // Assert
+            Assert.NotNull(selectClause);
+            Assert.False(selectClause.AllSelected);
+            var pathSelectItem = Assert.IsType<PathSelectItem>(Assert.Single(selectClause.SelectedItems));
+            pathSelectItem.SelectedPath.Equals(new ODataSelectPath(new PropertySegment(HardCodedTestModel.GetPersonPreviousAddressesProp())));
+
+            SelectExpandClause subLevelSelect = pathSelectItem.SelectAndExpand;
+            Assert.NotNull(subLevelSelect);
+            Assert.False(subLevelSelect.AllSelected); // it's false not matter we select "*"
+            Assert.IsType<WildcardSelectItem>(Assert.Single(subLevelSelect.SelectedItems));
+        }
+
+        [Fact]
+        public void SelectWithNestedSelectGeneratedPropertiesWorks()
+        {
+            // Arrange
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "PreviousAddresses($compute=tolower(Street) as lowStreet;$select=City,lowStreet)"}
+                });
+
+            // Act
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+
+            // Assert
+            Assert.NotNull(selectClause);
+            Assert.False(selectClause.AllSelected);
+            var pathSelectItem = Assert.IsType<PathSelectItem>(Assert.Single(selectClause.SelectedItems));
+
+            // $compute
+            ComputeClause subCompute = pathSelectItem.ComputeOption;
+            Assert.NotNull(subCompute);
+            ComputeExpression computeExpr = Assert.Single(subCompute.ComputedItems);
+            Assert.Equal("lowStreet", computeExpr.Alias);
+            var functionCall = Assert.IsType<SingleValueFunctionCallNode>(computeExpr.Expression);
+            Assert.Equal("tolower", functionCall.Name);
+            Assert.Empty(functionCall.Functions);
+
+            // $select
+            SelectExpandClause subLevelSelect = pathSelectItem.SelectAndExpand;
+            Assert.NotNull(subLevelSelect);
+            Assert.False(subLevelSelect.AllSelected);
+            Assert.Equal(2, subLevelSelect.SelectedItems.Count());
+
+            var items = subLevelSelect.SelectedItems.ToArray();
+            items[0].ShouldBePathSelectionItem(new ODataPath(new PropertySegment(HardCodedTestModel.GetAddressCityProperty())));
+            items[1].ShouldBePathSelectionItem(new ODataPath(new DynamicPathSegment("lowStreet")));
+        }
+
+        #endregion
+
+        #region $select and generated properties
+        [Fact]
+        public void DollarComputedPropertyTreatedAsOpenPropertyInSelect()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "DoubleTotal"},
+                    {"$compute", "FavoriteNumber mul 2 as DoubleTotal"}
+                });
+            odataQueryOptionParser.ParseCompute();
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+            AssertSelectString("DoubleTotal", selectClause);
+        }
+
+        [Fact]
+        public void ApplyComputedPropertyTreatedAsOpenPropertyInSelect()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "DoubleTotal"},
+                    {"$apply", "compute(FavoriteNumber mul 2 as DoubleTotal)"}
+                });
+            odataQueryOptionParser.ParseApply();
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+            AssertSelectString("DoubleTotal", selectClause);
+        }
+
+        [Fact]
+        public void SelectAfterApplyReferencingCollapsedPropertyThrows()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "FavoriteNumber"},
+                    {"$apply", "aggregate(FavoriteNumber with sum as DoubleTotal)"},
+                });
+
+            odataQueryOptionParser.ParseApply();
+            Action action = () => odataQueryOptionParser.ParseSelectAndExpand();
+
+            action.ShouldThrow<ODataException>().WithMessage(ODataErrorStrings.ApplyBinder_GroupByPropertyNotPropertyAccessValue("FavoriteNumber"));
+        }
+
+        [Fact]
+        public void ComputeAfterApplyPropertyTreatedAsOpenPropertyInSelect()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$select", "DoubleTotal, NewTotal"},
+                    {"$apply", "aggregate(FavoriteNumber with sum as DoubleTotal)"},
+                    {"$compute", "DoubleTotal as NewTotal"},
+                });
+            odataQueryOptionParser.ParseApply();
+            odataQueryOptionParser.ParseCompute();
+            var selectClause = odataQueryOptionParser.ParseSelectAndExpand();
+            AssertSelectString("DoubleTotal, NewTotal", selectClause);
+        }
+
+        [Fact]
+        public void ComputeInExpandPropertyTreatedAsOpenPropertyInSelect()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$expand", "MyDog($compute=Color as ColorAlias;$select=ColorAlias)"},
+                });
+            var expandClause = odataQueryOptionParser.ParseSelectAndExpand();
+            // TODO: Can't use AssertExpandString, because SelectExpandClauseExtensions doesn't support $compute,$filter,$apply etc.
+            var expandedSelectionItem = expandClause.SelectedItems.OfType<ExpandedNavigationSelectItem>().Single();
+            expandedSelectionItem.ComputeOption.Should().NotBeNull();
+            expandedSelectionItem.ComputeOption.ComputedItems.Single().Alias.ShouldBeEquivalentTo("ColorAlias");
+            expandedSelectionItem.SelectAndExpand.SelectedItems.Single().ShouldBeSelectedItemOfType<PathSelectItem>().SelectedPath.LastSegment.Identifier.ShouldBeEquivalentTo("ColorAlias");
+        }
+
+        [Fact]
+        public void ComputeInExpandPropertyTreatedAsOpenPropertyInFilter()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$expand", "MyDog($compute=Color as ColorAlias;$filter=ColorAlias eq 'Red')"},
+                });
+            var expandClause = odataQueryOptionParser.ParseSelectAndExpand();
+            // TODO: Can't use AssertExpandString, because SelectExpandClauseExtensions doesn't support $compute,$filter,$apply etc.
+            var expandedSelectionItem = expandClause.SelectedItems.OfType<ExpandedNavigationSelectItem>().Single();
+            expandedSelectionItem.ComputeOption.Should().NotBeNull();
+            expandedSelectionItem.ComputeOption.ComputedItems.Single().Alias.ShouldBeEquivalentTo("ColorAlias");
+            var binaryOperatorNode = expandedSelectionItem.FilterOption.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal);
+            binaryOperatorNode.Left.As<ConvertNode>().Source.ShouldBeSingleValueOpenPropertyAccessQueryNode("ColorAlias");
+        }
+
+        [Fact]
+        public void ApplyInExpandPropertyTreatedAsOpenPropertyInSelect()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$expand", "MyDog($apply=aggregate(Color with max as MaxColor);$select=MaxColor)"},
+                });
+            var expandClause = odataQueryOptionParser.ParseSelectAndExpand();
+            // TODO: Can't use AssertExpandString, because SelectExpandClauseExtensions doesn't support $compute,$filter,$apply etc.
+            var expandedSelectionItem = expandClause.SelectedItems.OfType<ExpandedNavigationSelectItem>().Single();
+            expandedSelectionItem.ApplyOption.Should().NotBeNull();
+            expandedSelectionItem.ApplyOption.Transformations.Single().As<AggregateTransformationNode>().Expressions.Single().Alias.ShouldBeEquivalentTo("MaxColor");
+            expandedSelectionItem.SelectAndExpand.SelectedItems.Single().ShouldBeSelectedItemOfType<PathSelectItem>().SelectedPath.LastSegment.Identifier.ShouldBeEquivalentTo("MaxColor");
+        }
+
+        [Fact]
+        public void ApplyInExpandPropertyTreatedAsOpenPropertyInFilter()
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$expand", "MyDog($apply=aggregate(Color with max as MaxColor);$filter=MaxColor eq 'Red')"},
+                });
+            var expandClause = odataQueryOptionParser.ParseSelectAndExpand();
+            // TODO: Can't use AssertExpandString, because SelectExpandClauseExtensions doesn't support $compute,$filter,$apply etc.
+            var expandedSelectionItem = expandClause.SelectedItems.OfType<ExpandedNavigationSelectItem>().Single();
+            expandedSelectionItem.ApplyOption.Should().NotBeNull();
+            expandedSelectionItem.ApplyOption.Transformations.Single().As<AggregateTransformationNode>().Expressions.Single().Alias.ShouldBeEquivalentTo("MaxColor");
+            var binaryOperatorNode = expandedSelectionItem.FilterOption.Expression.ShouldBeBinaryOperatorNode(BinaryOperatorKind.Equal);
+            binaryOperatorNode.Left.As<ConvertNode>().Source.ShouldBeSingleValueOpenPropertyAccessQueryNode("MaxColor");
+        }
+
+        [Theory]
+        [InlineData("$apply=aggregate(Color with max as MaxColor);$filter=Color eq 'Red'")]
+        [InlineData("$apply=aggregate(Color with max as MaxColor)/filter(Color eq 'Red')")]
+        [InlineData("$apply=aggregate(Color with max as MaxColor);$select=Color")]
+        [InlineData("$apply=aggregate(Color with max as MaxColor);$select=MaxColor,Color")]
+        public void FilterAfterApplyReferencingCollapsedPropertyThrows(string nestedClause)
+        {
+            var odataQueryOptionParser = new ODataQueryOptionParser(HardCodedTestModel.TestModel,
+                HardCodedTestModel.GetPersonType(), HardCodedTestModel.GetPeopleSet(),
+                new Dictionary<string, string>()
+                {
+                    {"$expand", $"MyDog({nestedClause})"},
+                });
+
+            Action action = () => odataQueryOptionParser.ParseSelectAndExpand();
+
+            action.ShouldThrow<ODataException>().WithMessage(ODataErrorStrings.ApplyBinder_GroupByPropertyNotPropertyAccessValue("Color"));
+        }
 
         #endregion
 
@@ -1340,14 +1649,14 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             var selectionItem = result.SelectedItems.Single();
 
             AssertSelectString(expectedSelect ?? select, result);
-            ConvertExpandToString(result).Should().BeEmpty();
+            Assert.True(String.IsNullOrEmpty(ConvertExpandToString(result)));
 
             var publicSelectItem = result.SelectedItems.Single();
             publicSelectItem.Should().BeSameAs(selectionItem);
 
             if (!String.IsNullOrEmpty(select))
             {
-                result.AllSelected.Should().BeFalse();
+                Assert.False(result.AllSelected);
             }
 
             return selectionItem;
@@ -1366,7 +1675,7 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
             AssertSelectString("", result);
             AssertExpandString(expectedExpand ?? expand, result);
 
-            result.AllSelected.Should().BeTrue();
+            Assert.True(result.AllSelected);
 
             return expandedSelectionItem;
         }
@@ -1378,14 +1687,14 @@ namespace Microsoft.OData.Tests.ScenarioTests.UriParser
         {
             string expectedExpand = expand ?? string.Empty;
             expectedExpand = string.Join(",", expectedExpand.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(TrimSpacesAroundSlash).Distinct());
-            ConvertExpandToString(result).Should().Be(expectedExpand);
+            Assert.Equal(expectedExpand, ConvertExpandToString(result));
         }
 
         private static void AssertSelectString(string select, SelectExpandClause result)
         {
             string expectedSelect = select ?? string.Empty;
             expectedSelect = string.Join(",", expectedSelect.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(TrimSpacesAroundSlash).Distinct());
-            ConvertSelectToString(result).Should().Be(expectedSelect);
+            Assert.Equal(expectedSelect, ConvertSelectToString(result));
         }
 
         // TODO: Need V4 String Builder

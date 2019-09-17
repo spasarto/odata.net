@@ -6,6 +6,7 @@
 
 namespace Microsoft.OData.UriParser.Aggregation
 {
+    using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
@@ -78,30 +79,49 @@ namespace Microsoft.OData.UriParser.Aggregation
             return CreatePropertiesUriSegment(lastGroupByPropertyNodes, lastAggregateExpressions, computeExpressions);
         }
 
-        internal List<string> GetLastAggregatedPropertyNames()
+        internal HashSet<EndPathToken> GetLastAggregatedPropertyNames()
         {
             if (lastAggregateExpressions == null && lastComputeExpressions == null && lastGroupByPropertyNodes == null)
             {
                 return null;
             }
 
-            List<string> result = new List<string>();
+            HashSet<EndPathToken> result = new HashSet<EndPathToken>();
             if (lastAggregateExpressions != null)
             {
-                result.AddRange(lastAggregateExpressions.Select(statement => statement.Alias));
+                result.UnionWith(lastAggregateExpressions.Select(statement => new EndPathToken(statement.Alias, null)));
             }
 
             if (lastComputeExpressions != null)
             {
-                result.AddRange(lastComputeExpressions.Select(statement => statement.Alias));
+                result.UnionWith(lastComputeExpressions.Select(statement => new EndPathToken(statement.Alias, null)));
             }
 
             if (lastGroupByPropertyNodes != null)
             {
-                result.AddRange(lastGroupByPropertyNodes.Select(statement => statement.Name));
+                result.UnionWith(GetGroupByPaths(lastGroupByPropertyNodes, null));
             }
 
             return result;
+        }
+
+        private IEnumerable<EndPathToken> GetGroupByPaths(IEnumerable<GroupByPropertyNode> nodes, EndPathToken token)
+        {
+            foreach (var node in nodes)
+            {
+                var nodeToken = new EndPathToken(node.Name, token);
+                if (node.ChildTransformations == null || !node.ChildTransformations.Any())
+                {
+                    yield return nodeToken;
+                }
+                else
+                {
+                    foreach (var child in GetGroupByPaths(node.ChildTransformations, nodeToken))
+                    {
+                        yield return child;
+                    }
+                }
+            }
         }
 
         private string CreatePropertiesUriSegment(
@@ -109,11 +129,20 @@ namespace Microsoft.OData.UriParser.Aggregation
             IEnumerable<AggregateExpressionBase> aggregateExpressions,
             IEnumerable<ComputeExpression> computeExpressions)
         {
+            Func<GroupByPropertyNode, string> func = (prop) =>
+           {
+               var children = CreatePropertiesUriSegment(prop.ChildTransformations, null, null);
+
+               return string.IsNullOrEmpty(children)
+                      ? prop.Name
+                      : prop.Name + ODataConstants.ContextUriProjectionStart + children + ODataConstants.ContextUriProjectionEnd;
+           };
+
             string result = string.Empty;
             if (groupByPropertyNodes != null)
             {
                 var groupByPropertyArray =
-                    groupByPropertyNodes.Select(prop => prop.Name + CreatePropertiesUriSegment(prop.ChildTransformations, null, null))
+                    groupByPropertyNodes.Select(prop => func(prop))
                         .ToArray();
                 result = string.Join(",", groupByPropertyArray);
                 result = aggregateExpressions == null
@@ -127,20 +156,16 @@ namespace Microsoft.OData.UriParser.Aggregation
                     : CreateAggregatePropertiesUriSegment(aggregateExpressions);
             }
 
-            if (computeExpressions != null)
+            if (computeExpressions != null && !string.IsNullOrEmpty(result) /* don't add compute if only compute() is present */)
             {
                 string computeProperties = string.Join(",", computeExpressions.Select(e => e.Alias).ToArray());
                 if (!string.IsNullOrEmpty(computeProperties))
                 {
-                    result = string.IsNullOrEmpty(result)
-                        ? computeProperties
-                        : string.Format(CultureInfo.InvariantCulture, "{0},{1}", result, computeProperties);
+                    result = string.Format(CultureInfo.InvariantCulture, "{0},{1}", result, computeProperties);
                 }
             }
 
-            return string.IsNullOrEmpty(result)
-                ? result
-                : ODataConstants.ContextUriProjectionStart + result + ODataConstants.ContextUriProjectionEnd;
+            return result;
         }
 
         private static string CreateAggregatePropertiesUriSegment(IEnumerable<AggregateExpressionBase> aggregateExpressions)

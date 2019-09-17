@@ -102,6 +102,8 @@ namespace Microsoft.OData.Edm {
         internal const string EdmModel_Validator_Semantic_InvalidComplexTypePolymorphic = "EdmModel_Validator_Semantic_InvalidComplexTypePolymorphic";
         internal const string EdmModel_Validator_Semantic_InvalidKeyNullablePart = "EdmModel_Validator_Semantic_InvalidKeyNullablePart";
         internal const string EdmModel_Validator_Semantic_EntityKeyMustBeScalar = "EdmModel_Validator_Semantic_EntityKeyMustBeScalar";
+        internal const string EdmModel_Validator_Semantic_EntityComposableBoundEscapeFunctionMustBeLessOne = "EdmModel_Validator_Semantic_EntityComposableBoundEscapeFunctionMustBeLessOne";
+        internal const string EdmModel_Validator_Semantic_EntityNoncomposableBoundEscapeFunctionMustBeLessOne = "EdmModel_Validator_Semantic_EntityNoncomposableBoundEscapeFunctionMustBeLessOne";
         internal const string EdmModel_Validator_Semantic_InvalidKeyKeyDefinedInBaseClass = "EdmModel_Validator_Semantic_InvalidKeyKeyDefinedInBaseClass";
         internal const string EdmModel_Validator_Semantic_KeyMissingOnEntityType = "EdmModel_Validator_Semantic_KeyMissingOnEntityType";
         internal const string EdmModel_Validator_Semantic_BadNavigationPropertyUndefinedRole = "EdmModel_Validator_Semantic_BadNavigationPropertyUndefinedRole";
@@ -147,7 +149,6 @@ namespace Microsoft.OData.Edm {
         internal const string EdmModel_Validator_Semantic_InvalidEntitySetPathUnknownTypeCastSegment = "EdmModel_Validator_Semantic_InvalidEntitySetPathUnknownTypeCastSegment";
         internal const string EdmModel_Validator_Semantic_OperationWithEntitySetPathReturnTypeInvalid = "EdmModel_Validator_Semantic_OperationWithEntitySetPathReturnTypeInvalid";
         internal const string EdmModel_Validator_Semantic_OperationWithEntitySetPathAndReturnTypeTypeNotAssignable = "EdmModel_Validator_Semantic_OperationWithEntitySetPathAndReturnTypeTypeNotAssignable";
-        internal const string EdmModel_Validator_Semantic_OperationWithEntitySetPathResolvesToEntityTypeMismatchesCollectionEntityTypeReturnType = "EdmModel_Validator_Semantic_OperationWithEntitySetPathResolvesToEntityTypeMismatchesCollectionEntityTypeReturnType";
         internal const string EdmModel_Validator_Semantic_OperationWithEntitySetPathResolvesToCollectionEntityTypeMismatchesEntityTypeReturnType = "EdmModel_Validator_Semantic_OperationWithEntitySetPathResolvesToCollectionEntityTypeMismatchesEntityTypeReturnType";
         internal const string EdmModel_Validator_Semantic_SchemaElementNameAlreadyDefined = "EdmModel_Validator_Semantic_SchemaElementNameAlreadyDefined";
         internal const string EdmModel_Validator_Semantic_InvalidMemberNameMatchesTypeName = "EdmModel_Validator_Semantic_InvalidMemberNameMatchesTypeName";
@@ -209,6 +210,7 @@ namespace Microsoft.OData.Edm {
         internal const string EdmModel_Validator_Semantic_EnumMustHaveIntegralUnderlyingType = "EdmModel_Validator_Semantic_EnumMustHaveIntegralUnderlyingType";
         internal const string EdmModel_Validator_Semantic_InaccessibleTerm = "EdmModel_Validator_Semantic_InaccessibleTerm";
         internal const string EdmModel_Validator_Semantic_InaccessibleTarget = "EdmModel_Validator_Semantic_InaccessibleTarget";
+        internal const string EdmModel_Validator_Semantic_VocabularyAnnotationApplyToNotAllowedAnnotatable = "EdmModel_Validator_Semantic_VocabularyAnnotationApplyToNotAllowedAnnotatable";
         internal const string EdmModel_Validator_Semantic_ElementDirectValueAnnotationFullNameMustBeUnique = "EdmModel_Validator_Semantic_ElementDirectValueAnnotationFullNameMustBeUnique";
         internal const string EdmModel_Validator_Semantic_NoEntitySetsFoundForType = "EdmModel_Validator_Semantic_NoEntitySetsFoundForType";
         internal const string EdmModel_Validator_Semantic_CannotInferEntitySetWithMultipleSetsPerType = "EdmModel_Validator_Semantic_CannotInferEntitySetWithMultipleSetsPerType";

@@ -662,13 +662,15 @@ namespace Microsoft.OData.UriParser
             }
             else
             {
-                if (this.parsedSegments.Last().TargetKind != RequestTargetKind.Resource)
+                ODataPathSegment lastSegment = this.parsedSegments.Last();
+                if (lastSegment.TargetKind != RequestTargetKind.Resource)
                 {
                     throw ExceptionUtil.CreateBadRequestError(
-                        ODataErrorStrings.PathParser_EntityReferenceNotSupported(this.parsedSegments.Last().Identifier));
+                        ODataErrorStrings.PathParser_EntityReferenceNotSupported(lastSegment.Identifier));
                 }
 
                 ReferenceSegment referenceSegment = new ReferenceSegment(lastNavigationSource);
+                referenceSegment.SingleResult = lastSegment.SingleResult;
                 this.parsedSegments.Add(referenceSegment);
             }
 
@@ -1012,6 +1014,11 @@ namespace Microsoft.OData.UriParser
             {
                 // Use TargetEdmType for EachSegment to represent a pseudo-single entity.
                 bindingType = (previousSegment is EachSegment) ? previousSegment.TargetEdmType : previousSegment.EdmType;
+            }
+
+            if (!String.IsNullOrEmpty(identifier) && identifier[0] == ':' && bindingType != null)
+            {
+                identifier = ResolveEscapeFunction(identifier, bindingType, configuration.Model, out parenthesisExpression);
             }
 
             ICollection<OperationSegmentParameter> resolvedParameters;
@@ -1596,6 +1603,53 @@ namespace Microsoft.OData.UriParser
             }
 
             throw new ODataException(Strings.PathParser_TypeCastOnlyAllowedInDerivedTypeConstraint(fullTypeName, kind, name));
+        }
+
+        private static string ResolveEscapeFunction(string identifier, IEdmType bindingType, IEdmModel model, out string parenthesisExpression)
+        {
+            Debug.Assert(identifier != null && identifier.Length >= 1 && identifier[0] == ':');
+            Debug.Assert(bindingType != null);
+
+            bool isComposableRequired = identifier.Length >= 2 && identifier[identifier.Length - 1] == ':';
+            IEdmFunction function = model.FindBoundOperations(bindingType)
+                .OfType<IEdmFunction>().FirstOrDefault(f => f.IsComposable == isComposableRequired && IsUrlEscapeFunction(model, f));
+            if (function == null)
+            {
+                throw ExceptionUtil.CreateBadRequestError(ODataErrorStrings.RequestUriProcessor_NoBoundEscapeFunctionSupported(bindingType.FullTypeName()));
+            }
+
+            if (function.Parameters == null || function.Parameters.Count() != 2 || !function.Parameters.ElementAt(1).Type.IsString())
+            {
+                throw ExceptionUtil.CreateBadRequestError(ODataErrorStrings.RequestUriProcessor_EscapeFunctionMustHaveOneStringParameter(function.FullName()));
+            }
+
+            parenthesisExpression = function.Parameters.ElementAt(1).Name + "='" + (isComposableRequired ? identifier.Substring(1, identifier.Length - 2) : identifier.Substring(1)) + "'";
+            return function.FullName();
+        }
+
+        internal static bool IsUrlEscapeFunction(IEdmModel model, IEdmFunction function)
+        {
+            Debug.Assert(model != null);
+            Debug.Assert(function != null);
+
+            IEdmVocabularyAnnotation annotation = model.FindVocabularyAnnotations<IEdmVocabularyAnnotation>(function,
+                Edm.Vocabularies.Community.V1.CommunityVocabularyModel.UrlEscapeFunctionTerm).FirstOrDefault();
+            if (annotation != null)
+            {
+                if (annotation.Value == null)
+                {
+                    // If the annotation is applied but a value is not specified then the value is assumed to be true.
+                    return true;
+                }
+
+                IEdmBooleanConstantExpression tagConstant = annotation.Value as IEdmBooleanConstantExpression;
+                if (tagConstant != null)
+                {
+                    return tagConstant.Value;
+                }
+            }
+
+            return false;
         }
     }
 }

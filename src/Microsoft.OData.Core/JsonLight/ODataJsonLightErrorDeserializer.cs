@@ -193,6 +193,12 @@ namespace Microsoft.OData.JsonLight
                     this.ReadErrorPropertyAnnotationValue,
                     (propertyParsingResult, propertyName) =>
                     {
+                        if (this.JsonReader.NodeType == JsonNodeType.Property)
+                        {
+                            // Read over property name
+                            this.JsonReader.Read();
+                        }
+
                         switch (propertyParsingResult)
                         {
                             case PropertyParsingResult.ODataInstanceAnnotation:
@@ -327,8 +333,15 @@ namespace Microsoft.OData.JsonLight
                     break;
 
                 default:
-                    // skip any unsupported properties in the inner error
-                    this.JsonReader.SkipValue();
+                    if (!innerError.Properties.ContainsKey(propertyName))
+                    {
+                        innerError.Properties.Add(propertyName, this.JsonReader.ReadODataValue());
+                    }
+                    else
+                    {
+                        innerError.Properties[propertyName] = this.JsonReader.ReadODataValue();
+                    }
+
                     break;
             }
         }
