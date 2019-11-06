@@ -813,6 +813,10 @@ namespace Microsoft.OData.JsonLight
                 case ODataAnnotationNames.ODataMediaETag:  // 'odata.mediaEtag'
                     return this.ReadAndValidateAnnotationStringValue(annotationName);
 
+                case ODataAnnotationNames.ODataContentId: // 'odata.contentid'
+                    double? valueRead = this.JsonReader.ReadDoubleValue();
+                    
+                    return valueRead;
                 default:
                     ODataAnnotationNames.ValidateIsCustomAnnotationName(annotationName);
                     Debug.Assert(
@@ -891,6 +895,10 @@ namespace Microsoft.OData.JsonLight
                 case ODataAnnotationNames.ODataMediaETag:  // 'odata.mediaEtag'
                     ODataJsonLightReaderUtils.EnsureInstance(ref mediaResource);
                     mediaResource.ETag = (string)annotationValue;
+                    break;
+
+                case ODataAnnotationNames.ODataContentId: // 'odata.contentid'
+                    resource.InstanceAnnotations.Add(new ODataInstanceAnnotation(annotationName, annotationValue.ToODataValue(), true));
                     break;
 
                 default:

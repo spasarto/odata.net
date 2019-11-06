@@ -44,9 +44,11 @@ namespace Microsoft.OData.JsonLight
                     ODataRemoved,
                     ODataDelta,
                     ODataNull,
+                    ODataContentId,
                 },
                 StringComparer.Ordinal);
 
+        internal const string ODataContentId = "odata.contentid";
         /// <summary>The OData Context annotation name.</summary>
         internal const string ODataContext = "odata.context";
 
